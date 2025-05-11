@@ -32,9 +32,10 @@ class GradingApp(QMainWindow):
         # 从yaml加载配置
         try:
             self.load_hw_config()
-            self.output_dir = self.config.get("outputs_path", "hw6/output")
-            self.hw_dir = self.config.get("hw_path", "hw6/sutdent_summit")
-            self.output_file = os.path.join(self.output_dir, "评分结果.xlsx")
+            self.output_dir = self.config.get("outputs_path")
+            self.hw_dir = self.config.get("hw_path")
+            output_id = self.config.get("output_id")
+            self.output_file = os.path.join(self.output_dir, f"评分结果_{str(output_id)}.xlsx")
             
             os.makedirs(self.output_dir, exist_ok=True)
             
@@ -44,10 +45,6 @@ class GradingApp(QMainWindow):
             
         # 确保输出目录存在
         os.makedirs(self.output_dir, exist_ok=True)
-
-
-        
-
         self.initUI()
         self.load_existing_scores()
         
@@ -133,7 +130,7 @@ class GradingApp(QMainWindow):
 
         self.comment_input = QTextEdit()
         self.comment_input.setPlaceholderText("Enter comments here (optional)")
-        self.comment_input.setFixedHeight(100) 
+        self.comment_input.setFixedHeight(300) 
         right_panel_layout.addWidget(self.comment_input)
 
         self.call_ai_button = QPushButton("Call AI for Suggestions")
@@ -293,9 +290,32 @@ class GradingApp(QMainWindow):
                 system_prompt = config.get("system_prompt", "")
                 question = config.get("question", "")
             
-            # 初始化客户端
-            client = OpenAI(api_key=config.get("api_key"), base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")  # 替换为你的API key
+                ai_input = config.get("ai_input", 1)  # 默认为1:仅代码
+
+            # 根据ai_input准备输入内容
+            # 准备输入内容
+            if ai_input == 1:  # 仅代码
+                input_content = f"{question}\n\n学生代码:\n{student_code}"
+            else:
+                # 获取输出文本内容
+                output_text = ""
+                if hasattr(self.output_display, 'text'):  # 如果是QLabel
+                    output_text = self.output_display.text()
+                elif isinstance(self.output_display, QWidget):  # 如果是QWidget容器
+                    # 查找容器中的QLabel
+                    for child in self.output_display.findChildren(QLabel):
+                        output_text = child.text()
+                        break
+                
+                if ai_input == 2:  # 仅输出文本
+                    input_content = f"{question}\n\n学生输出:\n{output_text}"
+                else:  # 代码和输出文本
+                    input_content = f"{question}\n\n学生代码:\n{student_code}\n\n学生输出:\n{output_text}"
             
+            
+            # 初始化客户端
+            client = OpenAI(api_key=config.get("api_key"), base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+     
             # 清空评论框并显示"正在评估..."
             self.comment_input.clear()
             self.comment_input.setPlainText("正在评估...")
@@ -307,7 +327,7 @@ class GradingApp(QMainWindow):
                 model=config.get("model_name"),
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"{question}\n\n学生代码:\n{student_code}"}
+                    {"role": "user", "content": input_content}
                 ],
                 stream=True,
             )
@@ -322,11 +342,6 @@ class GradingApp(QMainWindow):
                     self.comment_input.moveCursor(self.comment_input.textCursor().End)
                     self.comment_input.repaint()
                     QApplication.processEvents()  # 处理UI事件
-            
-            # 尝试从响应中提取分数
-            if "评分:" in full_response:
-                score_part = full_response.split("评分:")[1].split("\n")[0].strip()
-                self.score_input.setText(score_part)
             
             self.statusBar().showMessage("AI评估完成", 3000)
             
@@ -363,8 +378,14 @@ class GradingApp(QMainWindow):
         self.student_nav_label.setText(f"Student: {student_name} ({student_id}) | File {index+1}/{len(self.notebook_files)}")
 
         self.code_display.clear()
-        self.output_display.setText("")
-        self.output_display.setPixmap(QPixmap())
+        if hasattr(self.output_display, 'setText'):
+            self.output_display.setText("")
+            self.output_display.setPixmap(QPixmap())
+        else:
+            # If output_display is a QWidget, find and clear its QLabel children
+            for child in self.output_display.findChildren(QLabel):
+                child.setText("")
+                child.setPixmap(QPixmap())
 
         try:
             with open(notebook_path, 'r', encoding='utf-8') as f:
@@ -389,7 +410,7 @@ class GradingApp(QMainWindow):
                     self.code_display.setText(cell['source'])
                     target_cell_found = True
                     
-                    # Extract outputs for this specific cell
+                    # 提取该cell的所有输出
                     found_image_data = None
                     text_outputs = []
                     if 'outputs' in cell:
@@ -404,28 +425,42 @@ class GradingApp(QMainWindow):
                                 elif 'data' in output and 'text/plain' in output.data:
                                     text_outputs.append("".join(output.data['text/plain']))
                     
+                    # 创建输出文本
+                    output_text = "\n".join(text_outputs) if text_outputs else "No text output"
+                    output_text_size = len(output_text)
+                    if output_text_size > 500:
+                        output_text = f"(truncated {output_text_size - 500} characters)...\n" + output_text[output_text_size-500: output_text_size] 
+                    
+                    # 创建新的widget来同时显示图片和文本
+                    output_widget = QWidget()
+                    output_layout = QVBoxLayout(output_widget)
+                    
+                    # 如果有图片，添加图片
                     if found_image_data:
                         pixmap = QPixmap()
                         pixmap.loadFromData(base64.b64decode(found_image_data))
                         if not pixmap.isNull():
-                            # 保持原始比例缩放，宽度固定500，高度按比例计算
+                            image_label = QLabel()
                             scaled_pixmap = pixmap.scaled(
                                 1000, 
                                 int(1000 * pixmap.height() / pixmap.width()),
                                 Qt.KeepAspectRatio, 
                                 Qt.SmoothTransformation
                             )
-                            self.output_display.setPixmap(scaled_pixmap)
-                            self.output_display.setScaledContents(False)  # 禁用自动拉伸
+                            image_label.setPixmap(scaled_pixmap)
+                            output_layout.addWidget(image_label)
                     
-
-                    elif text_outputs:
-                        self.output_display.setText("\n".join(text_outputs))
-                        self.output_display.setScaledContents(False)
-                    else:
-                        self.output_display.setText("No displayable output (image/text) found for the target cell.")
-                        self.output_display.setScaledContents(False)
-                    break # Stop after finding the first matching cell
+                    # 添加文本输出
+                    text_label = QLabel(output_text)
+                    text_label.setWordWrap(True)
+                    output_layout.addWidget(text_label)
+                    
+                    # 清空并设置新的输出widget
+                    self.output_display = output_widget
+                    container = self.centralWidget()
+                    container.layout().replaceWidget(container.layout().itemAt(1).widget(), self.output_display)
+                    
+                    break # 找到第一个匹配的cell后停止
             
             if not target_cell_found:
                 self.code_display.setText(f"Target string '{self.target_string}' not found in any code cell of this notebook.")

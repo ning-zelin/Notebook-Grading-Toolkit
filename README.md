@@ -11,7 +11,7 @@
 - 支持DeepSeek/Qwen自动评分以及手动调整
 - 评分结果自动保存，便于后续统计与归档
 
-页面示例： 
+页面示例： 左边显示代码，中间显示代码输出（图片+文字），右边可以手工或AI打分
 
 <div align="center">
 <img src="./misc/image-20250511184449360.png" alt="image-20250511184657302" style="width:90%;">
@@ -30,26 +30,51 @@
    ```yaml
    api_key: your-api-key
    model_name: deepseek-v3 # DeepSeekV3使用体验较好，Qwen响应速度慢
-   hw_path: /extp6/ai_ta/hw6/sutdent_summit
-   outputs_path: /extp6/ai_ta/hw6/output
+   hw_path: /extp6/ai_ta/hw8/student_summit
+   outputs_path: /extp6/ai_ta/hw8/output
+   output_id: 2
+   target: "#    Homework 2        #" # ipynb文件中的作业标识符
+   weight: 0.5 # 作业权重，用于计算最终分数
+   ai_input: 3 # 1: code, 2: output_text, 3: code and output_text
    system_prompt: |-
-     You are a teaching assistant for a computer vision course,
-     You are grading students' homework assignments,
-     I will tell you the assignment questions and students' answers,
-     Please evaluate whether the answers meet the following criteria,
-     You can only answer "正确" or "有误", and a brief explanation if the answer is  "有误",
-     You are not receiving complete code, so just focus on whether the logic is correct - don't worry about missing package imports or unimplemented functions,
-     output format: {result:{} explanation:{}}, your answer should be in Chinese, and both field keys must be included (value can be left empty with spaces if your result is "正确"),
-   output_id: 1
-   question: "检查compute_sift_descriptors函数，SIFT的实现逻辑正确即可。判错条件：1. 实现的并不是SIFT描述子（给出解释哪里实现的不对）2. 直接调用OpenCV的SIFT函数(Sobel等函数允许调用)，回答尽可能简洁"
-   target: "Homework 1" # ipynb文件中的作业标识符
+   You are a teaching assistant for a computer vision course.
+   Your task is to grade students' homework assignments.
+   I will provide you with the homework questions and students' answers.
+   Please evaluate whether the answers are correct.
+   You should only respond with "正确" (Correct) or "有误" (Incorrect), and provide a brief explanation if the answer is "有误".
+   You will not receive complete code, so focus only on whether the logic is correct—do not worry about missing package imports or unimplemented functions.
+   Output format: {result:{} explanation:{}}. Your answer should be in Chinese, and both field keys must be included (the value for explanation can be left blank if the result is "正确").
+   question: "调参（推荐使用网格搜索），要求最终准确率在57%以上"
    ```
 
-   
+   每个作业题对应一个配置文件，目录结构示例：
+   ```shell
+   /extp6/ai_ta/hw8
+   ├── configs
+   │   ├── hw1.yaml
+   │   └── hw2.yaml
+   ├── output
+   │   ├── 评分结果_1.xlsx
+   │   └── 评分结果_2.xlsx
+   └── student_summit
+      ├── 张三-2233003.ipynb
+      ├── 李四-2233002.ipynb
+      ├── 王二-2233002.ipynb
+   ```
 
-3. 运行代码
+
+3. 运行代码，AI+人工一起批改：
 
    ```shell
-   python3 src/gui.py --config your-yaml-path
+   python3 src/gui.py --config /extp6/ai_ta/hw8/configs/hw1.yaml
+   python3 src/gui.py --config /extp6/ai_ta/hw8/configs/hw2.yaml
+   ```
+4. 分数合并（多道题加权平均）：
+   ```shell
+   python3 src/merge_score.py --config /extp6/ai_ta/hw8/configs
    ```
 
+## 🤓 Upload to Feishu
+1. 进入feishu多维表格，点击上传excel，导入`outputs_path`下的excel文件
+2. 在多维表格中对`作业提交名单`按学号排序，刚上传的excel按同样方法排序
+3. 分数和评语整列复制，粘贴到对应位置
