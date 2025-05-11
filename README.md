@@ -22,6 +22,7 @@
 <div align="center">
 <img src="./misc/image-20250511184449360.png" alt="image-20250511184657302" style="width:90%;">
 </div>
+
 ## 🛠️ Installation
 
 1. 申请[阿里云大模型接口](https://bailian.console.aliyun.com/?tab=home#/home)(目前有免费活动)，如果使用其他平台的API则需要修改`src/gui.py`的base_url部分
