@@ -12,19 +12,16 @@
 
 快捷键：
 
-* Q：上一个
-* E：下一个
-* S(super)：给满分并跳到下一个
-* A(ai)：DeepSeek评分
+* **Q**：上一个
+* **E**：下一个
+* **S** (super)：给满分并跳到下一个
+* **A** (ai)：DeepSeek评分
+* 使用技巧：output是对的就按**S**，是错的就先按**A**再按**E**，DeepSeek也错了就手动在分数栏改一下
 
-页面示例： 左边显示代码，中间显示代码输出（图片+文字），右边可以手工或AI打分
-
-使用技巧：output是对的就按s，是错的就先按a再按e，DeepSeek也错了就手动在分数栏改一下
-
+页面示例： 左边显示target_cell中的代码，中间显示cell_output（图片+文字），右边可以手动或AI打分
 <div align="center">
 <img src="./misc/image-20250511184449360.png" alt="image-20250511184657302" style="width:90%;">
 </div>
-
 ## 🛠️ Installation
 
 1. 申请[阿里云大模型接口](https://bailian.console.aliyun.com/?tab=home#/home)(目前有免费活动)，如果使用其他平台的API则需要修改`src/gui.py`的base_url部分
