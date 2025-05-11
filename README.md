@@ -2,7 +2,7 @@
 
 ## 📜 Introduction
 
-**CV GradingSystem** 是一个自动化作业/考试批改工具，可极大减轻重复性劳动。
+**CV GradingSystem** 是一个自动化作业/考试批改工具，可极大减轻助教的重复性劳动。
 
 主要功能包括：
 - 自动扫描作业文件夹，批量加载学生提交的 `.ipynb` 文件
@@ -11,10 +11,11 @@
 - 支持DeepSeek/Qwen自动评分以及手动调整
 - 评分结果自动保存，便于后续统计与归档
 
-页面示例：
+页面示例： 
 
-
-![image-20250511184657302](/extp6/workspace/tmp/ai_ta/misc/image-20250511184449360.png)
+<div align="center">
+<img src="./misc/image-20250511184449360.png" alt="image-20250511184657302" style="width:90%;">
+</div>
 
 ## 🛠️ Installation
 
