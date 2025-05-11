@@ -343,6 +343,15 @@ class GradingApp(QMainWindow):
                     self.comment_input.repaint()
                     QApplication.processEvents()  # 处理UI事件
             
+            # 根据AI输出自动评分
+            first_10_chars = full_response[:10]
+            if "正确" in first_10_chars:
+                self.score_input.setText("100")
+                self.save_current_score()
+            elif "有误" in first_10_chars:
+                self.score_input.setText("80")
+                self.save_current_score()
+            
             self.statusBar().showMessage("AI评估完成", 3000)
             
         except Exception as e:
@@ -567,8 +576,18 @@ class GradingApp(QMainWindow):
                 self.load_notebook_by_index(self.current_index)
             else:
                 self.statusBar().showMessage("Already at the last student.")
+        elif key == Qt.Key_S:  # 给100分并切换到下一个同学
+            self.score_input.setText("100")
+            self.save_current_score()  # 先保存100分
+            if self.current_index < len(self.notebook_files) - 1:
+                self.current_index += 1
+                self.load_notebook_by_index(self.current_index)
+            else:
+                self.statusBar().showMessage("Already at the last student.")
+        elif key == Qt.Key_A:  # 调用AI评估
+            self.call_ai()
         else:
-            super().keyPressEvent(event) # Important for other key events
+            super().keyPressEvent(event) 
 
 if __name__ == "__main__":
     import argparse

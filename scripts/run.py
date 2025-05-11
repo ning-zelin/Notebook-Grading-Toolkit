@@ -1,5 +1,5 @@
 import os
-cfg_dir = '/extp6/workspace/tmp/ai_ta/hw8/configs/hw2.yaml'
+cfg_dir = '/extp6/workspace/tmp/ai_ta/hw10/configs/hw5.yaml'
 # 获取当前脚本所在目录
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取上一级目录
